@@ -1,0 +1,1383 @@
+```html
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+ <title>AudioMerger Pro - 高機能音楽連結アプリ</title>
+ <!-- Tailwind CSS CDN -->
+ <script src="https://cdn.tailwindcss.com"></script>
+ <!-- LameJS (MP3 Encoder) CDN -->
+ <script src="https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.all.min.js"></script>
+ <script>
+ tailwind.config = {
+ theme: {
+ extend: {
+ colors: {
+ brand: {
+ 50: '#f5f3ff',
+ 100: '#ede9fe',
+ 500: '#8b5cf6',
+ 600: '#7c3aed',
+ 700: '#6d28d9',
+ 900: '#4c1d95',
+ }
+ }
+ }
+ }
+ }
+ </script>
+ <style>
+ /* スクロールバーのカスタマイズ */
+ ::-webkit-scrollbar {
+ width: 6px;
+ }
+ ::-webkit-scrollbar-track {
+ background: #0f172a;
+ }
+ ::-webkit-scrollbar-thumb {
+ background: #334155;
+ border-radius: 3px;
+ }
+ ::-webkit-scrollbar-thumb:hover {
+ background: #475569;
+ }
+ /* タップ時のハイライトを無効化 */
+ button, select, input {
+ -webkit-tap-highlight-color: transparent;
+ }
+ </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans antialiased selection:bg-brand-500 selection:text-white">
+ <!-- ヘッダー -->
+ <header class="bg-slate-900/80 backdrop-blur border-b border-slate-800 sticky top-0 z-50 px-4 py-3.5">
+ <div class="max-w-3xl mx-auto flex items-center justify-between">
+ <div class="flex items-center space-x-2.5">
+ <div class="bg-gradient-to-tr from-brand-500 to-indigo-500 p-2 rounded-xl shadow-lg shadow-brand-500/20">
+ <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+ <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+ </svg>
+ </div>
+ <div>
+ <h1 class="text-lg font-bold bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">AudioMerger Pro</h1>
+ <p class="text-[10px] text-brand-500 font-semibold tracking-wider uppercase">Local Audio Joiner</p>
+ </div>
+ </div>
+ <span class="inline-flex items-center bg-emerald-500/10 text-emerald-400 text-xs px-2.5 py-1 rounded-full border border-emerald-500/20 font-medium">
+ <span class="w-1.5 h-1.5 bg-emerald-400 rounded-full mr-1.5 animate-pulse"></span>
+ 通信量ゼロ・安全設計
+ </span>
+ </div>
+ </header>
+ <!-- メインコンテンツ -->
+ <main class="flex-1 max-w-3xl w-full mx-auto p-4 space-y-6 pb-24">
+ <!-- スマートフォン向け注意書き -->
+ <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex items-start space-x-3 shadow-inner">
+ <div class="text-amber-400 mt-0.5">
+ <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+ <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+ </svg>
+ </div>
+ <div class="text-xs text-slate-400 space-y-1">
+ <p class="font-semibold text-slate-300">💡 スマホでご利用の方へ</p>
+ <p>・マナーモード(消音スイッチ)がONの場合や、イヤホンなしの内蔵スピーカーからでも、音が出るよう対策されています。</p>
+ <p>・iOSの仕様上、メモリ不足を防ぐため、1回の結合は5〜10曲(合計30分程度)以内を推奨します。</p>
+ </div>
+ </div>
+ <!-- ファイルアップロードエリア -->
+ <section>
+ <label for="audio-upload" class="group relative flex flex-col items-center justify-center border-2 border-dashed border-slate-700 hover:border-brand-500 bg-slate-900/50 hover:bg-slate-900/80 transition-all duration-300 rounded-2xl p-6 cursor-pointer overflow-hidden">
+ <input type="file" id="audio-upload" accept="audio/mpeg, audio/mp3, audio/wav, audio/ogg, audio/aac, audio/x-m4a, .mp3, .wav, .m4a, .aac, .ogg" multiple class="hidden">
+ 
+ <div class="flex flex-col items-center space-y-3 py-4 text-center z-10">
+ <div class="p-4 bg-slate-800 group-hover:bg-brand-600/20 rounded-full text-slate-400 group-hover:text-brand-400 transition-colors duration-300">
+ <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+ <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+ </svg>
+ </div>
+ <div>
+ <span class="text-sm font-semibold text-slate-200 block group-hover:text-white transition-colors">タップして音楽ファイルを追加</span>
+ <span class="text-xs text-slate-500 mt-1 block">複数選択・まとめて追加できます (MP3, WAV, M4A等)</span>
+ </div>
+ </div>
+ </label>
+ </section>
+ <!-- トラックリスト -->
+ <section class="space-y-3">
+ <div class="flex items-center justify-between">
+ <h2 class="text-sm font-bold text-slate-400 tracking-wider uppercase flex items-center">
+ <svg class="w-4 h-4 mr-1.5 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+ <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+ </svg>
+ 連結する曲のリスト (<span id="track-count">0</span>曲)
+ </h2>
+ <button id="clear-all-btn" class="text-xs text-slate-500 hover:text-red-400 transition-colors flex items-center space-x-1 font-medium px-2 py-1 rounded-lg hover:bg-slate-900">
+ <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+ <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+ </svg>
+ <span>すべて削除</span>
+ </button>
+ </div>
+ <!-- 空の状態 -->
+ <div id="empty-state" class="text-center py-12 bg-slate-900/30 rounded-2xl border border-slate-900 border-dashed">
+ <p class="text-slate-500 text-sm">上のエリアをタップして、まずは音楽を追加してください</p>
+ </div>
+ <!-- リストコンテナ -->
+ <div id="track-list" class="space-y-3">
+ <!-- JSで動的にトラックが挿入されます -->
+ </div>
+ </section>
+ <!-- 設定パネル -->
+ <section class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-5 shadow-lg">
+ <h2 class="text-sm font-bold text-slate-200 tracking-wider uppercase flex items-center pb-3 border-b border-slate-800">
+ <svg class="w-4.5 h-4.5 mr-2 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+ <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+ </svg>
+ 連結オプション設定
+ </h2>
+ <!-- モード選択 -->
+ <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+ <div class="space-y-1.5">
+ <label class="block text-xs font-semibold text-slate-400">つなぎ目の処理</label>
+ <div class="relative">
+ <select id="transition-mode" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-brand-500 appearance-none cursor-pointer">
+ <option value="direct">ダイレクト (隙間なし)</option>
+ <option value="crossfade" selected>クロスフェード (重ねて滑らかに)</option>
+ <option value="gap">無音を挟む (一時停止)</option>
+ </select>
+ <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-400">
+ <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+ </div>
+ </div>
+ </div>
+ <!-- 移行時間スライダー -->
+ <div id="transition-time-container" class="space-y-1.5">
+ <div class="flex justify-between items-center">
+ <label id="transition-time-label" class="text-xs font-semibold text-slate-400">クロスフェード秒数</label>
+ <span id="transition-time-value" class="text-xs font-bold text-brand-400 bg-brand-500/10 px-2 py-0.5 rounded-md">2.0秒</span>
+ </div>
+ <div class="flex items-center space-x-3">
+ <input id="transition-time-input" type="range" min="0.5" max="8" step="0.5" value="2.0" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-brand-500">
+ </div>
+ </div>
+ </div>
+ <!-- フェード設定 -->
+ <div class="grid grid-cols-2 gap-4 pt-2">
+ <div class="space-y-1.5">
+ <div class="flex justify-between items-center">
+ <label class="text-xs font-semibold text-slate-400">曲開始時のフェードイン</label>
+ <span id="fade-in-value" class="text-[11px] text-slate-300">0.5秒</span>
+ </div>
+ <input id="fade-in-input" type="range" min="0" max="5" step="0.5" value="0.5" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-brand-500">
+ </div>
+ <div class="space-y-1.5">
+ <div class="flex justify-between items-center">
+ <label class="text-xs font-semibold text-slate-400">曲終了時のフェードアウト</label>
+ <span id="fade-out-value" class="text-[11px] text-slate-300">0.5秒</span>
+ </div>
+ <input id="fade-out-input" type="range" min="0" max="5" step="0.5" value="0.5" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-brand-500">
+ </div>
+ </div>
+ </section>
+ <!-- 処理&出力エリア -->
+ <section class="space-y-4">
+ <button id="merge-btn" disabled class="w-full bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 disabled:from-slate-800 disabled:to-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed text-white font-bold py-4 px-6 rounded-2xl shadow-lg transition-all duration-300 transform active:scale-[0.98] flex items-center justify-center space-x-2">
+ <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+ <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+ </svg>
+ <span id="merge-btn-text">曲を連結して1つにする</span>
+ </button>
+ <!-- 進捗インジケータ (隠し要素) -->
+ <div id="progress-container" class="hidden bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
+ <div class="flex justify-between text-xs font-semibold">
+ <span id="progress-status" class="text-slate-300">オーディオを合成中...</span>
+ <span id="progress-percentage" class="text-brand-400">0%</span>
+ </div>
+ <div class="w-full bg-slate-800 rounded-full h-3 overflow-hidden">
+ <div id="progress-bar" class="bg-gradient-to-r from-brand-500 to-indigo-500 h-full w-0 transition-all duration-200"></div>
+ </div>
+ </div>
+ <!-- 出力結果プレイヤー (隠し要素) -->
+ <div id="output-container" class="hidden bg-gradient-to-b from-slate-900 to-slate-950 border border-brand-500/30 rounded-2xl p-5 space-y-4 shadow-xl shadow-brand-500/5">
+ <div class="flex items-center space-x-2">
+ <span class="p-1.5 bg-brand-500/20 text-brand-400 rounded-lg">
+ <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+ </span>
+ <h3 class="font-bold text-slate-100">連結が完了しました!</h3>
+ </div>
+ <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between gap-4">
+ <div class="flex items-center space-x-3 w-full md:w-auto">
+ <button id="output-play-btn" class="w-12 h-12 bg-brand-500 hover:bg-brand-600 rounded-full flex items-center justify-center text-white shrink-0 shadow-lg shadow-brand-500/20 transition-transform active:scale-95">
+ <!-- Play Icon -->
+ <svg id="output-play-icon" class="w-5 h-5 ml-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" /></svg>
+ <!-- Pause Icon (hidden) -->
+ <svg id="output-pause-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
+ </button>
+ <div class="overflow-hidden">
+ <span class="text-xs font-semibold text-brand-400 block tracking-wide">PREVIEW</span>
+ <span id="output-filename" class="text-sm font-bold text-slate-200 block truncate">joined_audio.wav</span>
+ </div>
+ </div>
+ 
+ <div class="text-right w-full md:w-auto flex md:flex-col justify-between md:justify-center items-center md:items-end border-t md:border-t-0 pt-2 md:pt-0 border-slate-800 space-y-1">
+ <div class="flex items-center space-x-1.5">
+ <span class="text-[11px] text-slate-500">保存形式:</span>
+ <select id="output-format" class="bg-slate-800 border border-slate-700 text-xs text-slate-200 rounded px-1.5 py-0.5 focus:outline-none focus:border-brand-500 cursor-pointer">
+ <option value="wav" selected>WAV (高音質)</option>
+ <option value="mp3">MP3 (軽量)</option>
+ </select>
+ </div>
+ <span id="output-duration" class="text-sm font-mono font-bold text-slate-300">00:00</span>
+ </div>
+ </div>
+ <div class="flex flex-col sm:flex-row gap-3">
+ <a id="download-btn" href="#" download="joined_audio.wav" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg transition-colors flex items-center justify-center space-x-2 text-sm">
+ <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+ <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+ </svg>
+ <span>音楽をスマホに保存する</span>
+ </a>
+ <button id="share-btn" class="bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-semibold py-3.5 px-5 rounded-xl border border-slate-700 transition-colors flex items-center justify-center space-x-2 text-sm">
+ <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+ <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 10.742l4.684-2.342m0 0l-4.684-2.342m4.684 2.342a3.001 3.001 0 100 4.316m-4.684-2.342a3.001 3.001 0 11-4.316-2.36m4.316 2.36l4.684 2.342m0 0a3 3 0 100 4.316" />
+ </svg>
+ <span>シェアする</span>
+ </button>
+ </div>
+ </div>
+ </section>
+ </main>
+ <!-- フッター -->
+ <footer class="bg-slate-950 border-t border-slate-900 py-6 text-center text-xs text-slate-600 mt-auto">
+ <div class="max-w-3xl mx-auto px-4">
+ <p>© 2026 AudioMerger Pro. Powered by Web Audio API.</p>
+ </div>
+ </footer>
+ <!-- Toast 通知コンテナ -->
+ <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900 border border-slate-700 px-4 py-3 rounded-xl shadow-2xl flex items-center space-x-2 opacity-0 translate-y-4 pointer-events-none transition-all duration-300 z-50">
+ <span id="toast-text" class="text-xs font-semibold text-slate-200"></span>
+ </div>
+ <!-- JavaScript -->
+ <script>
+ // 状態管理
+ const state = {
+ audioCtx: null,
+ tracks: [], // { id, file, name, size, duration, buffer, activeSource, trimStart, trimEnd, playOffset, currentTime, animationFrameId }
+ currentPlayingTrackId: null,
+ outputBlob: null,
+ outputWavBlob: null,
+ outputMp3Blob: null,
+ baseFilename: "joined_audio",
+ outputBuffer: null,
+ outputAudioUrl: null,
+ outputSource: null,
+ isOutputPlaying: false
+ };
+ // DOM要素
+ const audioUpload = document.getElementById('audio-upload');
+ const trackListContainer = document.getElementById('track-list');
+ const emptyState = document.getElementById('empty-state');
+ const trackCountLabel = document.getElementById('track-count');
+ const clearAllBtn = document.getElementById('clear-all-btn');
+ 
+ const transitionMode = document.getElementById('transition-mode');
+ const transitionTimeContainer = document.getElementById('transition-time-container');
+ const transitionTimeLabel = document.getElementById('transition-time-label');
+ const transitionTimeValue = document.getElementById('transition-time-value');
+ const transitionTimeInput = document.getElementById('transition-time-input');
+ 
+ const fadeInInput = document.getElementById('fade-in-input');
+ const fadeInValue = document.getElementById('fade-in-value');
+ const fadeOutInput = document.getElementById('fade-out-input');
+ const fadeOutValue = document.getElementById('fade-out-value');
+ 
+ const mergeBtn = document.getElementById('merge-btn');
+ const mergeBtnText = document.getElementById('merge-btn-text');
+ 
+ const progressContainer = document.getElementById('progress-container');
+ const progressStatus = document.getElementById('progress-status');
+ const progressPercentage = document.getElementById('progress-percentage');
+ const progressBar = document.getElementById('progress-bar');
+ 
+ const outputContainer = document.getElementById('output-container');
+ const outputPlayBtn = document.getElementById('output-play-btn');
+ const outputPlayIcon = document.getElementById('output-play-icon');
+ const outputPauseIcon = document.getElementById('output-pause-icon');
+ const outputFilename = document.getElementById('output-filename');
+ const outputDuration = document.getElementById('output-duration');
+ const outputFormat = document.getElementById('output-format');
+ const downloadBtn = document.getElementById('download-btn');
+ const shareBtn = document.getElementById('share-btn');
+ // トースト通知を表示
+ function showToast(message) {
+ const toast = document.getElementById('toast');
+ const toastText = document.getElementById('toast-text');
+ toastText.textContent = message;
+ toast.classList.remove('opacity-0', 'translate-y-4', 'pointer-events-none');
+ toast.classList.add('opacity-100', 'translate-y-0');
+ 
+ setTimeout(() => {
+ toast.classList.add('opacity-0', 'translate-y-4', 'pointer-events-none');
+ toast.classList.remove('opacity-100', 'translate-y-0');
+ }, 2500);
+ }
+ // AudioContextの初期化 (デコードと結合用)
+ function initAudioContext() {
+ if (!state.audioCtx) {
+ state.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+ }
+ if (state.audioCtx.state === 'suspended') {
+ state.audioCtx.resume();
+ }
+ }
+ // 秒数を「分:秒」形式に変換するヘルパー
+ function formatDuration(seconds) {
+ if (isNaN(seconds) || seconds === null) return "00:00";
+ const mins = Math.floor(seconds / 60);
+ const secs = Math.floor(seconds % 60);
+ return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+ }
+ // イベントリスナー設定
+ audioUpload.addEventListener('change', handleFileUpload);
+ clearAllBtn.addEventListener('click', clearAllTracks);
+ transitionMode.addEventListener('change', updateTransitionUI);
+ transitionTimeInput.addEventListener('input', () => {
+ transitionTimeValue.textContent = `${parseFloat(transitionTimeInput.value).toFixed(1)}秒`;
+ });
+ fadeInInput.addEventListener('input', () => {
+ fadeInValue.textContent = `${parseFloat(fadeInInput.value).toFixed(1)}秒`;
+ });
+ fadeOutInput.addEventListener('input', () => {
+ fadeOutValue.textContent = `${parseFloat(fadeOutInput.value).toFixed(1)}秒`;
+ });
+ outputFormat.addEventListener('change', updateOutputFormat);
+ mergeBtn.addEventListener('click', mergeAudioFiles);
+ // 移行オプションの表示調整
+ function updateTransitionUI() {
+ const mode = transitionMode.value;
+ if (mode === 'direct') {
+ transitionTimeContainer.classList.add('opacity-40', 'pointer-events-none');
+ } else {
+ transitionTimeContainer.classList.remove('opacity-40', 'pointer-events-none');
+ if (mode === 'crossfade') {
+ transitionTimeLabel.textContent = "クロスフェード秒数";
+ } else if (mode === 'gap') {
+ transitionTimeLabel.textContent = "無音(ギャップ)の秒数";
+ }
+ }
+ }
+ // ファイルアップロードのハンドラ
+ async function handleFileUpload(e) {
+ initAudioContext();
+ const files = Array.from(e.target.files);
+ if (files.length === 0) return;
+ showToast(`${files.length}個のファイルを読み込んでいます...`);
+ for (const file of files) {
+ const id = 'track_' + Math.random().toString(36).substr(2, 9);
+ const newTrack = {
+ id: id,
+ file: file, // 試聴再生(HTML5 Audio)で利用
+ name: file.name,
+ size: (file.size / (1024 * 1024)).toFixed(2), // MB
+ duration: null,
+ buffer: null,
+ status: 'loading',
+ activeSource: null, // HTML5 Audioのインスタンスを保持
+ isPlaying: false,
+ trimStart: 0,
+ trimEnd: null,
+ playOffset: 0,
+ currentTime: 0,
+ animationFrameId: null
+ };
+ state.tracks.push(newTrack);
+ renderTrackList();
+ try {
+ // 波形描画や最終的な結合処理のためにAudioContextでデコードは行っておく
+ const arrayBuffer = await file.arrayBuffer();
+ const audioBuffer = await new Promise((resolve, reject) => {
+ state.audioCtx.decodeAudioData(
+ arrayBuffer,
+ (buffer) => resolve(buffer),
+ (error) => reject(error)
+ );
+ });
+ 
+ newTrack.buffer = audioBuffer;
+ newTrack.duration = audioBuffer.duration;
+ newTrack.trimEnd = audioBuffer.duration; // 初期状態では終端を最大の長さに設定
+ newTrack.playOffset = 0;
+ newTrack.currentTime = 0;
+ newTrack.status = 'ready';
+ } catch (error) {
+ console.error("デコードエラー", error);
+ newTrack.status = 'error';
+ }
+ renderTrackList();
+ }
+ // ファイル入力をリセットして同じファイルを再選択可能にする
+ audioUpload.value = '';
+ }
+ // === ドラッグ&ドロップ(並び替え)用イベント処理 ===
+ let dragStartIndex = null;
+ let activeTouchItem = null;
+ // デスクトップ用マウスドラッグ
+ function handleDragStart(e) {
+ // ドラッグハンドル(.drag-handle)からの開始でなければドラッグさせない
+ if (!e.target.closest('.drag-handle')) {
+ e.preventDefault();
+ return;
+ }
+ if (e.target.closest('button') || e.target.closest('select') || e.target.closest('input')) {
+ e.preventDefault();
+ return;
+ }
+ dragStartIndex = parseInt(this.getAttribute('data-index'));
+ e.dataTransfer.effectAllowed = 'move';
+ this.classList.add('opacity-50', 'border-red-500');
+ }
+ // ドラッグオーバーハンドラ
+ function handleDragOver(e) {
+ if (e.preventDefault) { e.preventDefault(); }
+ return false;
+ }
+ // ドラッグエンターハンドラ
+ function handleDragEnter(e) {
+ this.classList.add('bg-slate-800/80', 'border-red-500/60');
+ }
+ // ドラッグリーブハンドラ
+ function handleDragLeave(e) {
+ this.classList.remove('bg-slate-800/80', 'border-red-500/60');
+ }
+ // ドロップハンドラ
+ function handleDrop(e) {
+ if (e.stopPropagation) { e.stopPropagation(); }
+ const dragEndIndex = parseInt(this.getAttribute('data-index'));
+ if (dragStartIndex !== null && dragStartIndex !== dragEndIndex) {
+ reorderTracks(dragStartIndex, dragEndIndex);
+ }
+ return false;
+ }
+ // ドラッグ終了ハンドラ
+ function handleDragEnd(e) {
+ this.classList.remove('opacity-50', 'border-red-500');
+ renderTrackList();
+ }
+ // スマートフォン用タッチドラッグ
+ function handleTouchStart(e) {
+ // ドラッグハンドル(.drag-handle)からの開始でなければ無視する
+ if (!e.target.closest('.drag-handle')) {
+ return;
+ }
+ if (e.target.closest('button') || e.target.closest('select') || e.target.closest('input')) {
+ return;
+ }
+ const item = e.currentTarget;
+ activeTouchItem = item;
+ dragStartIndex = parseInt(item.getAttribute('data-index'));
+ item.classList.add('opacity-60', 'scale-[0.98]', 'border-red-500', 'z-50');
+ document.body.style.overflow = 'hidden'; // ドラッグ中はスクロール無効化
+ }
+ // タッチ移動ハンドラ
+ function handleTouchMove(e) {
+ if (!activeTouchItem) return;
+ e.preventDefault(); // スクロール抑止
+ 
+ const touch = e.touches[0];
+ const elements = document.elementsFromPoint(touch.clientX, touch.clientY);
+ const targetItem = elements.find(el => el.classList && el.classList.contains('track-item') && el !== activeTouchItem);
+ 
+ if (targetItem) {
+ const targetIndex = parseInt(targetItem.getAttribute('data-index'));
+ if (dragStartIndex !== null && targetIndex !== dragStartIndex) {
+ reorderTracks(dragStartIndex, targetIndex);
+ dragStartIndex = targetIndex;
+ }
+ }
+ }
+ // トリミング調整:開始位置のリアルタイム更新
+ function updateTrimStart(trackId, value) {
+ const track = state.tracks.find(t => t.id === trackId);
+ if (!track) return;
+ // 調整中は個別プレビュー再生を停止して音を整理する
+ if (track.isPlaying) {
+ stopTrack(track);
+ renderTrackList();
+ }
+ const val = parseFloat(value);
+ // 終了位置を超えないように制限
+ if (val >= track.trimEnd) {
+ track.trimStart = Math.max(0, track.trimEnd - 0.1);
+ } else {
+ track.trimStart = val;
+ }
+ // シーク位置がトリミング開始より手前なら合わせる
+ if (track.playOffset < track.trimStart) {
+ track.playOffset = track.trimStart;
+ track.currentTime = track.trimStart;
+ const slider = document.getElementById(`seek-slider-${trackId}`);
+ if (slider) slider.value = track.trimStart;
+ const seekText = document.getElementById(`seek-time-text-${trackId}`);
+ if (seekText) seekText.textContent = `${formatDuration(track.trimStart)} / ${formatDuration(track.duration)}`;
+ }
+ // 描画がもたつかないようDOM値を直接書き換え
+ const startText = document.getElementById(`trim-start-val-${trackId}`);
+ if (startText) startText.textContent = `${track.trimStart.toFixed(1)}s`;
+ 
+ const rangeText = document.getElementById(`trim-range-${trackId}`);
+ if (rangeText) {
+ const diff = track.trimEnd - track.trimStart;
+ rangeText.textContent = `${formatDuration(track.trimStart)} 〜 ${formatDuration(track.trimEnd)} (実: ${formatDuration(diff)})`;
+ }
+ drawWaveform(track);
+ }
+ // トリミング調整:終了位置のリアルタイム更新
+ function updateTrimEnd(trackId, value) {
+ const track = state.tracks.find(t => t.id === trackId);
+ if (!track) return;
+ if (track.isPlaying) {
+ stopTrack(track);
+ renderTrackList();
+ }
+ const val = parseFloat(value);
+ // 開始位置を下回らないように制限
+ if (val <= track.trimStart) {
+ track.trimEnd = Math.min(track.duration, track.trimStart + 0.1);
+ } else {
+ track.trimEnd = val;
+ }
+ // シーク位置がトリミング終了を超えていたら調整
+ if (track.playOffset > track.trimEnd) {
+ track.playOffset = track.trimStart;
+ track.currentTime = track.trimStart;
+ const slider = document.getElementById(`seek-slider-${trackId}`);
+ if (slider) slider.value = track.trimStart;
+ const seekText = document.getElementById(`seek-time-text-${trackId}`);
+ if (seekText) seekText.textContent = `${formatDuration(track.trimStart)} / ${formatDuration(track.duration)}`;
+ }
+ // 描画がもたつかないようDOM値を直接書き換え
+ const endText = document.getElementById(`trim-end-val-${trackId}`);
+ if (endText) endText.textContent = `${track.trimEnd.toFixed(1)}s`;
+ const rangeText = document.getElementById(`trim-range-${trackId}`);
+ if (rangeText) {
+ const diff = track.trimEnd - track.trimStart;
+ rangeText.textContent = `${formatDuration(track.trimStart)} 〜 ${formatDuration(track.trimEnd)} (実: ${formatDuration(diff)})`;
+ }
+ drawWaveform(track);
+ }
+ // タッチ終了ハンドラ
+ function handleTouchEnd(e) {
+ if (!activeTouchItem) return;
+ activeTouchItem.classList.remove('opacity-60', 'scale-[0.98]', 'border-red-500', 'z-50');
+ activeTouchItem = null;
+ dragStartIndex = null;
+ document.body.style.overflow = ''; // スクロール制限解除
+ renderTrackList();
+ }
+ // トラックの並び替えロジック
+ function reorderTracks(fromIndex, toIndex) {
+ stopAllPlayback();
+ const movedItem = state.tracks.splice(fromIndex, 1)[0];
+ state.tracks.splice(toIndex, 0, movedItem);
+ renderTrackList();
+ }
+ // === 試聴シークスライダー移動時の処理 ===
+ function seekTrack(trackId, value) {
+ const track = state.tracks.find(t => t.id === trackId);
+ if (!track) return;
+ const seekTime = parseFloat(value);
+ const trimEnd = track.trimEnd !== null ? track.trimEnd : track.duration;
+ 
+ // 範囲制限(トリミング範囲内にシークを留める)
+ let targetTime = seekTime;
+ if (targetTime < track.trimStart) targetTime = track.trimStart;
+ if (targetTime > trimEnd) targetTime = trimEnd;
+ track.playOffset = targetTime;
+ track.currentTime = targetTime;
+ // シークテキストの更新
+ const seekText = document.getElementById(`seek-time-text-${trackId}`);
+ if (seekText) {
+ seekText.textContent = `${formatDuration(targetTime)} / ${formatDuration(track.duration)}`;
+ }
+ if (track.isPlaying && track.activeSource) {
+ // HTML5 AudioなのでcurrentTimeを変更するだけでシームレスにシークされる
+ track.activeSource.currentTime = targetTime;
+ } else {
+ drawWaveform(track);
+ }
+ }
+ // === 音の波形描画処理 ===
+ function drawWaveform(track) {
+ const canvas = document.getElementById(`waveform-canvas-${track.id}`);
+ if (!canvas || !track.buffer) return;
+ const ctx = canvas.getContext('2d');
+ const width = canvas.width;
+ const height = canvas.height;
+ ctx.clearRect(0, 0, width, height);
+ const data = track.buffer.getChannelData(0);
+ const step = Math.ceil(data.length / width);
+ const amp = height / 2;
+ // 背景色(ダークスレート)
+ ctx.fillStyle = '#090d16';
+ ctx.fillRect(0, 0, width, height);
+ // 中心線
+ ctx.beginPath();
+ ctx.moveTo(0, height / 2);
+ ctx.lineTo(width, height / 2);
+ ctx.strokeStyle = '#1e293b';
+ ctx.lineWidth = 1;
+ ctx.stroke();
+ // 波形本体の描画
+ ctx.beginPath();
+ for (let i = 0; i < width; i++) {
+ let min = 1.0;
+ let max = -1.0;
+ for (let j = 0; j < step; j++) {
+ const idx = i * step + j;
+ if (idx < data.length) {
+ const datum = data[idx];
+ if (datum < min) min = datum;
+ if (datum > max) max = datum;
+ }
+ }
+ 
+ // 音量を少し誇張して視覚的に見やすく
+ const yMin = (1 + min * 1.2) * amp;
+ const yMax = (1 + max * 1.2) * amp;
+ 
+ ctx.moveTo(i, yMin);
+ ctx.lineTo(i, yMax);
+ }
+ ctx.strokeStyle = '#3b82f6'; // 鮮やかな青色
+ ctx.lineWidth = 1.5;
+ ctx.stroke();
+ // トリミング(カット)された範囲の外側を半透明ブラックで覆う(非アクティブ化)
+ const trimStartSec = track.trimStart;
+ const trimEndSec = track.trimEnd !== null ? track.trimEnd : track.duration;
+ 
+ const startX = (trimStartSec / track.duration) * width;
+ const endX = (trimEndSec / track.duration) * width;
+ ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+ // 開始時間より前
+ ctx.fillRect(0, 0, startX, height);
+ // 終了時間より後ろ
+ ctx.fillRect(endX, 0, width - endX, height);
+ // 再生ヘッド(赤い縦線)の描画(試聴中、またはシークバー操作中)
+ const headTime = track.isPlaying ? track.currentTime : track.playOffset;
+ if (headTime !== undefined && headTime !== null) {
+ const headX = (headTime / track.duration) * width;
+ ctx.beginPath();
+ ctx.moveTo(headX, 0);
+ ctx.lineTo(headX, height);
+ ctx.strokeStyle = '#ef4444'; // 鮮やかな赤
+ ctx.lineWidth = 2;
+ ctx.stroke();
+ // ヘッドのつまみ(上部三角)
+ ctx.beginPath();
+ ctx.moveTo(headX - 4, 0);
+ ctx.lineTo(headX + 4, 0);
+ ctx.lineTo(headX, 5);
+ ctx.closePath();
+ ctx.fillStyle = '#ef4444';
+ ctx.fill();
+ }
+ }
+ // トラックリストのDOM描画
+ function renderTrackList() {
+ trackListContainer.innerHTML = '';
+ trackCountLabel.textContent = state.tracks.length;
+ if (state.tracks.length === 0) {
+ emptyState.classList.remove('hidden');
+ mergeBtn.disabled = true;
+ return;
+ }
+ emptyState.classList.add('hidden');
+ mergeBtn.disabled = !state.tracks.some(track => track.status === 'ready');
+ state.tracks.forEach((track, index) => {
+ const item = document.createElement('div');
+ // 曲の枠を赤色にデザイン変更
+ item.className = `p-4 rounded-xl border transition-all duration-200 flex flex-col space-y-3 track-item ${
+ track.isPlaying 
+ ? 'bg-slate-900 border-red-500 shadow-md shadow-red-500/20' 
+ : 'bg-slate-900/60 border-red-600/40 hover:border-red-500'
+ }`;
+ item.setAttribute('draggable', 'true');
+ item.setAttribute('data-index', index);
+ // 状態に応じたバッジ
+ let statusBadge = '';
+ if (track.status === 'loading') {
+ statusBadge = `<span class="inline-flex items-center text-[10px] font-bold text-brand-400 bg-brand-400/10 px-2 py-0.5 rounded-md animate-pulse">解析中...</span>`;
+ } else if (track.status === 'error') {
+ statusBadge = `<span class="inline-flex items-center text-[10px] font-bold text-red-400 bg-red-400/10 px-2 py-0.5 rounded-md">読み込み失敗</span>`;
+ } else {
+ // トリミング範囲が有効であればそのトリミング後の実再生時間を表示
+ const activeDuration = track.trimEnd !== null ? (track.trimEnd - track.trimStart) : track.duration;
+ statusBadge = `<span class="inline-flex items-center text-xs font-mono font-bold text-slate-400">${formatDuration(activeDuration)}</span>`;
+ }
+ // トリミングコントロール用HTML
+ let trimHtml = '';
+ if (track.status === 'ready') {
+ const startVal = track.trimStart;
+ const endVal = track.trimEnd !== null ? track.trimEnd : track.duration;
+ const activeLen = endVal - startVal;
+ trimHtml = `
+ <!-- 試聴波形とシークバー -->
+ <div class="space-y-2 mt-2.5 pt-2.5 border-t border-slate-800/40 text-xs">
+ <div class="flex items-center justify-between text-slate-400">
+ <span class="font-semibold text-slate-300 flex items-center">
+ <svg class="w-3.5 h-3.5 mr-1 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+ <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+ <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+ </svg>
+ 試聴波形と再生位置シーク
+ </span>
+ <span id="seek-time-text-${track.id}" class="font-mono text-[11px] text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded">
+ ${formatDuration(track.isPlaying ? track.currentTime : track.playOffset)} / ${formatDuration(track.duration)}
+ </span>
+ </div>
+ <!-- 波形表示キャンバス -->
+ <div class="bg-slate-950 rounded-xl overflow-hidden h-14 border border-slate-800 relative">
+ <canvas id="waveform-canvas-${track.id}" width="600" height="56" class="w-full h-full block"></canvas>
+ </div>
+ <!-- シークスライダー -->
+ <div class="flex items-center space-x-2">
+ <span class="text-[10px] text-slate-500 w-12 shrink-0">再生位置</span>
+ <input type="range" id="seek-slider-${track.id}" min="0" max="${track.duration}" step="0.1" value="${track.isPlaying ? track.currentTime : track.playOffset}" 
+ oninput="seekTrack('${track.id}', this.value)"
+ class="flex-1 h-1 bg-slate-800 rounded appearance-none cursor-pointer accent-blue-500">
+ </div>
+ </div>
+ <!-- 範囲トリミングコントロールエリア -->
+ <div class="space-y-3 mt-3 pt-3 border-t border-slate-800/80 text-xs">
+ <div class="flex items-center justify-between text-slate-400">
+ <span class="font-semibold text-slate-300 flex items-center">
+ <svg class="w-3.5 h-3.5 mr-1 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+ <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879M12 12L9.121 9.121m0 5.758a3 3 0 11-4.243 4.243 3 3 0 014.243-4.243zm0-5.758a3 3 0 11-4.243-4.243 3 3 0 014.243 4.243z" />
+ </svg>
+ 範囲トリミング (カット)
+ </span>
+ <span class="font-mono text-[11px] text-brand-400 bg-brand-500/10 px-1.5 py-0.5 rounded" id="trim-range-${track.id}">
+ ${formatDuration(startVal)} 〜 ${formatDuration(endVal)} (実: ${formatDuration(activeLen)})
+ </span>
+ </div>
+ <div class="space-y-2">
+ <!-- 開始時間スライダー -->
+ <div class="flex items-center space-x-2">
+ <span class="text-[10px] text-slate-500 w-12 shrink-0">開始位置</span>
+ <input type="range" min="0" max="${track.duration}" step="0.1" value="${startVal}" 
+ oninput="updateTrimStart('${track.id}', this.value)" 
+ class="flex-1 h-1 bg-slate-800 rounded appearance-none cursor-pointer accent-brand-500">
+ <span id="trim-start-val-${track.id}" class="font-mono text-[11px] text-slate-400 w-12 text-right">${startVal.toFixed(1)}s</span>
+ </div>
+ <!-- 終了時間スライダー -->
+ <div class="flex items-center space-x-2">
+ <span class="text-[10px] text-slate-500 w-12 shrink-0">終了位置</span>
+ <input type="range" min="0" max="${track.duration}" step="0.1" value="${endVal}" 
+ oninput="updateTrimEnd('${track.id}', this.value)" 
+ class="flex-1 h-1 bg-slate-800 rounded appearance-none cursor-pointer accent-brand-500">
+ <span id="trim-end-val-${track.id}" class="font-mono text-[11px] text-slate-400 w-12 text-right">${endVal.toFixed(1)}s</span>
+ </div>
+ </div>
+ </div>
+ `;
+ }
+ item.innerHTML = `
+ <div class="flex items-start justify-between space-x-3">
+ <div class="flex items-start space-x-2.5 overflow-hidden w-full">
+ <!-- ドラッグハンドル(並び替え用の端の目印) -->
+ <div class="drag-handle flex items-center justify-center h-6 w-6 text-slate-500 hover:text-slate-300 cursor-grab active:cursor-grabbing shrink-0 mt-0.5 rounded hover:bg-slate-800" title="ドラッグして並び替え">
+ <svg class="w-4.5 h-4.5 pointer-events-none" fill="currentColor" viewBox="0 0 24 24">
+ <path d="M9 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm6 0a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm-6 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm6 0a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm-6 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm6 0a2 2 0 1 1-4 0 2 2 0 0 1 4 0z"/>
+ </svg>
+ </div>
+ <span class="flex items-center justify-center w-6 h-6 bg-slate-800 text-slate-400 text-xs font-bold rounded-lg shrink-0 mt-0.5">${index + 1}</span>
+ <div class="overflow-hidden flex-1">
+ <h4 class="text-sm font-bold text-slate-200 truncate pr-4">${track.name}</h4>
+ <p class="text-[11px] text-slate-500 mt-0.5">${track.size} MB</p>
+ </div>
+ </div>
+ <div class="shrink-0 flex items-center space-x-1.5">
+ ${statusBadge}
+ </div>
+ </div>
+ 
+ <div class="flex items-center justify-between border-t border-slate-800/40 pt-3">
+ <!-- 試聴再生コントロール -->
+ <div class="flex items-center space-x-2">
+ ${track.status === 'ready' ? `
+ <button onclick="togglePlayTrack('${track.id}')" class="flex items-center space-x-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 active:scale-95 text-xs text-slate-200 rounded-lg transition-all font-semibold">
+ ${track.isPlaying ? `
+ <svg class="w-3.5 h-3.5 text-brand-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
+ <span>一時停止</span>
+ ` : `
+ <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" /></svg>
+ <span>試聴する</span>
+ `}
+ </button>
+ ` : ''}
+ </div>
+ <!-- 操作ボタン (並び替え / 削除) -->
+ <!-- 分かりやすい青色の並び替え矢印ボタン、および赤色で目立たせて「削除」のテキストを追加した削除ボタン -->
+ <div class="flex items-center space-x-2">
+ <!-- 上に移動 (分かりやすい青色の矢印ボタン) -->
+ <button onclick="moveTrack('${track.id}', -1)" ${index === 0 ? 'disabled' : ''} class="flex items-center justify-center w-9 h-9 bg-blue-600 hover:bg-blue-500 text-white disabled:text-slate-700 disabled:bg-slate-900/40 disabled:opacity-30 rounded-xl transition-all shadow" title="上へ移動">
+ <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+ <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 15l7-7 7 7" />
+ </svg>
+ </button>
+ <!-- 下に移動 (分かりやすい青色の矢印ボタン) -->
+ <button onclick="moveTrack('${track.id}', 1)" ${index === state.tracks.length - 1 ? 'disabled' : ''} class="flex items-center justify-center w-9 h-9 bg-blue-600 hover:bg-blue-500 text-white disabled:text-slate-700 disabled:bg-slate-900/40 disabled:opacity-30 rounded-xl transition-all shadow" title="下へ移動">
+ <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+ <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
+ </svg>
+ </button>
+ <!-- 削除 (目立つ赤色の削除ボタンに「削除」テキストを追加) -->
+ <button onclick="removeTrack('${track.id}')" class="flex items-center justify-center space-x-1 px-3 h-9 bg-red-600 hover:bg-red-500 text-white border border-red-700 hover:border-red-600 rounded-xl transition-all shadow" title="削除">
+ <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+ <span class="text-xs font-bold">削除</span>
+ </button>
+ </div>
+ </div>
+ ${trimHtml}
+ `;
+ // マウスドラッグ&ドロップイベントの割り当て
+ item.addEventListener('dragstart', handleDragStart);
+ item.addEventListener('dragover', handleDragOver);
+ item.addEventListener('dragenter', handleDragEnter);
+ item.addEventListener('dragleave', handleDragLeave);
+ item.addEventListener('drop', handleDrop);
+ item.addEventListener('dragend', handleDragEnd);
+ // スマホ用タッチドラッグ&ドロップイベントの割り当て
+ item.addEventListener('touchstart', handleTouchStart, { passive: false });
+ item.addEventListener('touchmove', handleTouchMove, { passive: false });
+ item.addEventListener('touchend', handleTouchEnd);
+ trackListContainer.appendChild(item);
+ });
+ // HTML再描画直後にすべての波形を描画する
+ state.tracks.forEach(track => {
+ if (track.status === 'ready') {
+ drawWaveform(track);
+ }
+ });
+ }
+ // === 試聴:任意の再生開始ロジック(HTML5 Audioによる新アプローチ) ===
+ function playTrackFromOffset(track, offset) {
+ stopAllPlayback();
+ // Web Audio APIではなく、HTML5のAudio要素を使ってマナーモード等の制限を回避する
+ const audioUrl = URL.createObjectURL(track.file);
+ const audio = new Audio(audioUrl);
+ audio.currentTime = offset;
+ audio.play().catch(e => console.error("Playback failed:", e));
+ track.isPlaying = true;
+ track.activeSource = audio; // 既存ロジックとの互換性のため同じ変数名を使用
+ track.currentTime = offset;
+ state.currentPlayingTrackId = track.id;
+ // 音声が終端まで到達した時の処理
+ audio.onended = () => {
+ if (track.activeSource === audio) {
+ handleTrackEnd(track);
+ }
+ };
+ // 進捗状況をアニメーション更新
+ track.animationFrameId = requestAnimationFrame(() => updatePlaybackProgress(track));
+ renderTrackList();
+ }
+ // トラックのプレビュー再生が自然終了した時のリセット処理
+ function handleTrackEnd(track) {
+ stopTrack(track);
+ track.currentTime = track.trimStart; // 再生が終わったらトリミングの開始位置に戻す
+ track.playOffset = track.trimStart;
+ if (state.currentPlayingTrackId === track.id) {
+ state.currentPlayingTrackId = null;
+ }
+ renderTrackList();
+ }
+ // === 試聴再生進捗の更新アニメーション ===
+ function updatePlaybackProgress(track) {
+ if (!track.isPlaying || !track.activeSource) return;
+ // Audio要素の現在の再生時間をリアルタイムに取得
+ const current = track.activeSource.currentTime;
+ const trimEnd = track.trimEnd !== null ? track.trimEnd : track.duration;
+ if (current >= trimEnd) {
+ // 設定されたトリミングの終了位置に到達したら停止する
+ handleTrackEnd(track);
+ return;
+ } else {
+ track.currentTime = current;
+ track.animationFrameId = requestAnimationFrame(() => updatePlaybackProgress(track));
+ }
+ // スライダー、テキスト、波形の表示をDOM直接変更で高速更新
+ const slider = document.getElementById(`seek-slider-${track.id}`);
+ if (slider) {
+ slider.value = track.currentTime;
+ }
+ const timeText = document.getElementById(`seek-time-text-${track.id}`);
+ if (timeText) {
+ timeText.textContent = `${formatDuration(track.currentTime)} / ${formatDuration(track.duration)}`;
+ }
+ drawWaveform(track);
+ }
+ // 個別プレビューの再生・停止トグル
+ function togglePlayTrack(trackId) {
+ const track = state.tracks.find(t => t.id === trackId);
+ if (!track || track.status !== 'ready') return;
+ if (track.isPlaying) {
+ stopTrack(track);
+ renderTrackList();
+ } else {
+ // 前回の再生オフセットがあればそこから再生し、無ければトリミングの開始位置から再生
+ const startPos = (track.playOffset !== undefined && track.playOffset >= track.trimStart && track.playOffset < (track.trimEnd || track.duration))
+ ? track.playOffset
+ : track.trimStart;
+ playTrackFromOffset(track, startPos);
+ }
+ }
+ // トラックプレビューを完全に停止
+ function stopTrack(track) {
+ if (track.activeSource) {
+ try {
+ track.activeSource.pause(); // Audio要素の一時停止
+ track.activeSource.src = ""; // メモリ解放
+ } catch (e) {}
+ track.activeSource = null;
+ }
+ if (track.animationFrameId) {
+ cancelAnimationFrame(track.animationFrameId);
+ track.animationFrameId = null;
+ }
+ track.isPlaying = false;
+ }
+ // すべての再生を停止 (出力全体のプレビューも含む)
+ function stopAllPlayback() {
+ // 個別プレビューの停止
+ state.tracks.forEach(t => stopTrack(t));
+ state.currentPlayingTrackId = null;
+ // 結合後プレイヤーの停止
+ if (state.isOutputPlaying) {
+ stopOutputPlayback();
+ }
+ }
+ // 削除
+ function removeTrack(trackId) {
+ const trackIndex = state.tracks.findIndex(t => t.id === trackId);
+ if (trackIndex > -1) {
+ stopTrack(state.tracks[trackIndex]);
+ state.tracks.splice(trackIndex, 1);
+ renderTrackList();
+ showToast("トラックを削除しました");
+ }
+ }
+ // すべて削除
+ function clearAllTracks() {
+ stopAllPlayback();
+ state.tracks = [];
+ renderTrackList();
+ showToast("すべてのトラックを削除しました");
+ }
+ // トラックの移動 (並び替えボタン用)
+ function moveTrack(trackId, direction) {
+ const index = state.tracks.findIndex(t => t.id === trackId);
+ if (index === -1) return;
+ const targetIndex = index + direction;
+ if (targetIndex < 0 || targetIndex >= state.tracks.length) return;
+ // 停止してから並び替える
+ stopAllPlayback();
+ // 入れ替え
+ const temp = state.tracks[index];
+ state.tracks[index] = state.tracks[targetIndex];
+ state.tracks[targetIndex] = temp;
+ renderTrackList();
+ }
+ // === 音声の連結・処理ロジック ===
+ async function mergeAudioFiles() {
+ initAudioContext();
+ stopAllPlayback();
+ const validTracks = state.tracks.filter(t => t.status === 'ready');
+ if (validTracks.length === 0) {
+ showToast("連結可能なトラックがありません。");
+ return;
+ }
+ // UIの状態更新
+ mergeBtn.disabled = true;
+ mergeBtnText.textContent = "処理中...";
+ progressContainer.classList.remove('hidden');
+ outputContainer.classList.add('hidden');
+ updateProgress(5, "連結設計を計算中...");
+ // オプションパラメータの取得
+ const mode = transitionMode.value;
+ const transTime = mode === 'direct' ? 0 : parseFloat(transitionTimeInput.value);
+ const fadeInSec = parseFloat(fadeInInput.value);
+ const fadeOutSec = parseFloat(fadeOutInput.value);
+ try {
+ // 1. 各トラックの開始、終了、および全体の長さをスケジュール計算 (トリミング範囲をベースとする)
+ let timeline = [];
+ let currentTime = 0;
+ for (let i = 0; i < validTracks.length; i++) {
+ const track = validTracks[i];
+ const trimStart = track.trimStart;
+ const trimEnd = track.trimEnd !== null ? track.trimEnd : track.duration;
+ const duration = trimEnd - trimStart; // トリミング後の実再生時間
+ 
+ let startTime = currentTime;
+ let endTime = startTime + duration;
+ if (i > 0) {
+ if (mode === 'crossfade') {
+ // クロスフェード時は前トラックの終端部分と重複させる
+ startTime = currentTime - transTime;
+ if (startTime < 0) startTime = 0;
+ endTime = startTime + duration;
+ } else if (mode === 'gap') {
+ // ギャップ時は無音時間を足す
+ startTime = currentTime + transTime;
+ endTime = startTime + duration;
+ }
+ }
+ timeline.push({
+ track: track,
+ startTime: startTime,
+ endTime: endTime,
+ duration: duration,
+ trimStart: trimStart
+ });
+ currentTime = endTime;
+ }
+ const totalDuration = currentTime;
+ updateProgress(15, `合計の長さ: ${formatDuration(totalDuration)} を作成中...`);
+ // 2. OfflineAudioContext の構築
+ // 高品質を保つためにステレオ(2ch)、サンプリングレート 44100Hz で出力
+ const targetSampleRate = 44100;
+ const totalSamples = Math.ceil(totalDuration * targetSampleRate);
+ 
+ const offlineCtx = new OfflineAudioContext(2, totalSamples, targetSampleRate);
+ updateProgress(25, "オーディオレンダラーの準備完了...");
+ // 3. 各トラックをオフラインバッファ上に配置・フェード設定
+ timeline.forEach((node, index) => {
+ const sourceNode = offlineCtx.createBufferSource();
+ sourceNode.buffer = node.track.buffer;
+ const gainNode = offlineCtx.createGain();
+ 
+ // ルーティング
+ sourceNode.connect(gainNode);
+ gainNode.connect(offlineCtx.destination);
+ const { startTime, endTime, duration, trimStart } = node;
+ // 基本ボリューム設定
+ gainNode.gain.setValueAtTime(0, startTime);
+ // === フェードの適用 ===
+ if (mode === 'crossfade') {
+ // クロスフェード処理
+ if (index === 0) {
+ // 最初の曲の始まり
+ gainNode.gain.setValueAtTime(0, startTime);
+ gainNode.gain.linearRampToValueAtTime(1, startTime + fadeInSec);
+ } else {
+ // 前の曲と重ねて徐々に上げる
+ gainNode.gain.setValueAtTime(0, startTime);
+ gainNode.gain.linearRampToValueAtTime(1, startTime + transTime);
+ }
+ if (index === timeline.length - 1) {
+ // 最後の曲の終わり
+ gainNode.gain.setValueAtTime(1, endTime - fadeOutSec);
+ gainNode.gain.linearRampToValueAtTime(0, endTime);
+ } else {
+ // 次の曲と重ねて徐々に下げる
+ gainNode.gain.setValueAtTime(1, endTime - transTime);
+ gainNode.gain.linearRampToValueAtTime(0, endTime);
+ }
+ } else {
+ // ダイレクト / ギャップモード of フェード処理
+ gainNode.gain.setValueAtTime(0, startTime);
+ gainNode.gain.linearRampToValueAtTime(1, startTime + fadeInSec);
+ gainNode.gain.setValueAtTime(1, endTime - fadeOutSec);
+ gainNode.gain.linearRampToValueAtTime(0, endTime);
+ }
+ // ソースの再生タイミング (オフライン空間上の開始時刻, トラック内での再生トリミング開始位置, 実再生する長さ)
+ sourceNode.start(startTime, trimStart, duration);
+ });
+ // 4. レンダリングの実行
+ offlineCtx.startRendering().then(async (renderedBuffer) => {
+ updateProgress(70, "WAVファイルにパッケージ中...");
+ state.outputBuffer = renderedBuffer;
+ 
+ // 5-1. WAVの作成
+ const wavBlob = await encodeWAV(renderedBuffer);
+ state.outputWavBlob = wavBlob;
+ // 5-2. MP3の作成 (LameJSを使用)
+ if (typeof lamejs !== 'undefined') {
+ updateProgress(85, "MP3ファイルに圧縮中...");
+ state.outputMp3Blob = await encodeMP3(renderedBuffer);
+ } else {
+ state.outputMp3Blob = wavBlob; // フォールバック
+ }
+ // デフォルトのファイル名作成(追加された曲の頭文字3つを「-」で繋ぐ)
+ const joinedTitle = validTracks.map(t => {
+ const nameWithoutExt = t.name.substring(0, t.name.lastIndexOf('.')) || t.name;
+ return nameWithoutExt.substring(0, 3);
+ }).join('-');
+ state.baseFilename = joinedTitle || "joined_audio";
+ // 現在選択されているフォーマットでダウンロード情報を更新
+ updateOutputFormat();
+ // UI表示 of 更新
+ updateProgress(100, "連結に成功しました!");
+ outputDuration.textContent = formatDuration(totalDuration);
+ // 完了UI
+ setTimeout(() => {
+ progressContainer.classList.add('hidden');
+ outputContainer.classList.remove('hidden');
+ mergeBtn.disabled = false;
+ mergeBtnText.textContent = "曲を連結して1つにする";
+ showToast("結合が完了しました!");
+ 
+ // 結合完了エリアまで滑らかにスクロール
+ outputContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+ }, 500);
+ }).catch(err => {
+ throw err;
+ });
+ } catch (error) {
+ console.error("連結処理に失敗", error);
+ progressContainer.classList.add('hidden');
+ mergeBtn.disabled = false;
+ mergeBtnText.textContent = "曲を連結して1つにする";
+ showToast("エラー: 処理中にエラーが発生しました。");
+ }
+ }
+ // 進捗バーの更新
+ function updateProgress(percentage, statusText) {
+ progressBar.style.width = `${percentage}%`;
+ progressPercentage.textContent = `${percentage}%`;
+ if (statusText) {
+ progressStatus.textContent = statusText;
+ }
+ }
+ // === WAVエンコーダ (16-bit Stereo PCM) ===
+ function encodeWAV(audioBuffer) {
+ return new Promise((resolve) => {
+ // バックグラウンドスレッドのような重い処理のブロックを防ぐためsetTimeoutを挟む
+ setTimeout(() => {
+ const numOfChan = audioBuffer.numberOfChannels;
+ const sampleRate = audioBuffer.sampleRate;
+ const format = 1; // 1 = raw PCM (uncompressed)
+ const bitDepth = 16;
+ 
+ let result;
+ if (numOfChan === 2) {
+ result = interleave(audioBuffer.getChannelData(0), audioBuffer.getChannelData(1));
+ } else {
+ result = audioBuffer.getChannelData(0); // モノラルの場合
+ }
+ 
+ const buffer = new ArrayBuffer(44 + result.length * 2);
+ const view = new DataView(buffer);
+ 
+ /* RIFF identifier */
+ writeString(view, 0, 'RIFF');
+ /* file length */
+ view.setUint32(4, 36 + result.length * 2, true);
+ /* RIFF type */
+ writeString(view, 8, 'WAVE');
+ /* format chunk identifier */
+ writeString(view, 12, 'fmt ');
+ /* format chunk length */
+ view.setUint32(16, 16, true);
+ /* sample format (raw) */
+ view.setUint16(20, format, true);
+ /* channel count */
+ view.setUint16(22, numOfChan, true);
+ /* sample rate */
+ view.setUint32(24, sampleRate, true);
+ /* byte rate (sample rate * block align) */
+ view.setUint32(28, sampleRate * numOfChan * (bitDepth / 8), true);
+ /* block align (channel count * bytes per sample) */
+ view.setUint16(32, numOfChan * (bitDepth / 8), true);
+ /* bits per sample */
+ view.setUint16(34, bitDepth, true);
+ /* data chunk identifier */
+ writeString(view, 36, 'data');
+ /* data chunk length */
+ view.setUint32(40, result.length * 2, true);
+ 
+ // PCMサンプルを書き込み
+ floatTo16BitPCM(view, 44, result);
+ 
+ resolve(new Blob([view], { type: 'audio/wav' }));
+ }, 50);
+ });
+ }
+ function interleave(inputL, inputR) {
+ const length = inputL.length + inputR.length;
+ const result = new Float32Array(length);
+ let index = 0;
+ let inputIndex = 0;
+ 
+ while (index < length) {
+ result[index++] = inputL[inputIndex];
+ result[index++] = inputR[inputIndex];
+ inputIndex++;
+ }
+ return result;
+ }
+ function floatTo16BitPCM(output, offset, input) {
+ for (let i = 0; i < input.length; i++, offset += 2) {
+ let s = Math.max(-1, Math.min(1, input[i]));
+ output.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+ }
+ }
+ // === フォーマット変更時のダウンロードURLとファイル名更新 ===
+ function updateOutputFormat() {
+ const format = outputFormat.value;
+ const isMp3 = format === 'mp3';
+ const activeBlob = isMp3 ? state.outputMp3Blob : state.outputWavBlob;
+ 
+ if (!activeBlob) return;
+ if (state.outputAudioUrl) {
+ URL.revokeObjectURL(state.outputAudioUrl);
+ }
+ state.outputAudioUrl = URL.createObjectURL(activeBlob);
+ state.outputBlob = activeBlob; // シェア機能などへの互換性維持
+ // ダウンロードリンクとUI表示を更新
+ downloadBtn.href = state.outputAudioUrl;
+ const ext = isMp3 ? 'mp3' : 'wav';
+ downloadBtn.download = `${state.baseFilename}.${ext}`;
+ outputFilename.textContent = `${state.baseFilename}.${ext}`;
+ // 再生中なら一度停止
+ if (state.isOutputPlaying) {
+ stopOutputPlayback();
+ }
+ }
+ // === MP3エンコーダ (16-bit PCM to MP3 128kbps) ===
+ function encodeMP3(audioBuffer) {
+ return new Promise((resolve) => {
+ // バックグラウンドスレッドのような重い処理のブロックを防ぐためsetTimeoutを挟む
+ setTimeout(() => {
+ const channels = audioBuffer.numberOfChannels;
+ const sampleRate = audioBuffer.sampleRate;
+ const mp3encoder = new lamejs.Mp3Encoder(channels, sampleRate, 128);
+ const mp3Data = [];
+ const sampleBlockSize = 1152;
+ if (channels === 2) {
+ const leftData = audioBuffer.getChannelData(0);
+ const rightData = audioBuffer.getChannelData(1);
+ 
+ const leftInt16 = new Int16Array(leftData.length);
+ const rightInt16 = new Int16Array(rightData.length);
+ for (let i = 0; i < leftData.length; i++) {
+ let sL = Math.max(-1, Math.min(1, leftData[i]));
+ leftInt16[i] = sL < 0 ? sL * 0x8000 : sL * 0x7FFF;
+ let sR = Math.max(-1, Math.min(1, rightData[i]));
+ rightInt16[i] = sR < 0 ? sR * 0x8000 : sR * 0x7FFF;
+ }
+ for (let i = 0; i < leftInt16.length; i += sampleBlockSize) {
+ const leftChunk = leftInt16.subarray(i, i + sampleBlockSize);
+ const rightChunk = rightInt16.subarray(i, i + sampleBlockSize);
+ const mp3buf = mp3encoder.encodeBuffer(leftChunk, rightChunk);
+ if (mp3buf.length > 0) {
+ mp3Data.push(mp3buf);
+ }
+ }
+ } else {
+ const data = audioBuffer.getChannelData(0);
+ const int16 = new Int16Array(data.length);
+ for (let i = 0; i < data.length; i++) {
+ let s = Math.max(-1, Math.min(1, data[i]));
+ int16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+ }
+ for (let i = 0; i < int16.length; i += sampleBlockSize) {
+ const chunk = int16.subarray(i, i + sampleBlockSize);
+ const mp3buf = mp3encoder.encodeBuffer(chunk);
+ if (mp3buf.length > 0) {
+ mp3Data.push(mp3buf);
+ }
+ }
+ }
+ const mp3buf = mp3encoder.flush();
+ if (mp3buf.length > 0) {
+ mp3Data.push(mp3buf);
+ }
+ const blob = new Blob(mp3Data, { type: 'audio/mp3' });
+ resolve(blob);
+ }, 50);
+ });
+ }
+ function writeString(view, offset, string) {
+ for (let i = 0; i < string.length; i++) {
+ view.setUint8(offset + i, string.charCodeAt(i));
+ }
+ }
+ // === 出力プレビュー再生の制御 ===
+ outputPlayBtn.addEventListener('click', () => {
+ if (state.isOutputPlaying) {
+ stopOutputPlayback();
+ } else {
+ startOutputPlayback();
+ }
+ });
+ function startOutputPlayback() {
+ if (!state.outputBlob) return;
+ 
+ stopAllPlayback(); // 他の再生を全部クリーンにする
+ // HTML5 Audio要素を使用してマナーモードを突破
+ const audioUrl = URL.createObjectURL(state.outputBlob);
+ const audio = new Audio(audioUrl);
+ 
+ audio.play().catch(e => console.error("Output playback failed:", e));
+ 
+ state.isOutputPlaying = true;
+ state.outputSource = audio;
+ outputPlayIcon.classList.add('hidden');
+ outputPauseIcon.classList.remove('hidden');
+ audio.onended = () => {
+ stopOutputPlayback();
+ };
+ }
+ function stopOutputPlayback() {
+ if (state.outputSource) {
+ try {
+ state.outputSource.pause();
+ state.outputSource.src = "";
+ } catch (e) {}
+ state.outputSource = null;
+ }
+ state.isOutputPlaying = false;
+ outputPlayIcon.classList.remove('hidden');
+ outputPauseIcon.classList.add('hidden');
+ }
+ // シェア機能 (Web Share API を活用。未対応ブラウザではクリップボードコピー)
+ shareBtn.addEventListener('click', async () => {
+ if (!state.outputBlob) return;
+ const file = new File([state.outputBlob], outputFilename.textContent, { type: 'audio/wav' });
+ 
+ if (navigator.canShare && navigator.canShare({ files: [file] })) {
+ try {
+ await navigator.share({
+ files: [file],
+ title: '結合した音楽',
+ text: 'AudioMerger Proで連結した音楽を共有します。'
+ });
+ showToast("共有を開きました");
+ } catch (err) {
+ if (err.name !== 'AbortError') {
+ fallbackShare();
+ }
+ }
+ } else {
+ fallbackShare();
+ }
+ });
+ function fallbackShare() {
+ // コピー用の一時テキストを生成
+ const shareText = "AudioMerger Pro を使ってスマートフォン上で音楽を連結しました!";
+ 
+ // クリップボードにコピー
+ const tempInput = document.createElement("input");
+ tempInput.value = shareText;
+ document.body.appendChild(tempInput);
+ tempInput.select();
+ document.execCommand('copy');
+ document.body.removeChild(tempInput);
+ 
+ showToast("アプリのテキストをコピーしました!保存してから共有してください。");
+ }
+ </script>
+</body>
+</html>
+```
